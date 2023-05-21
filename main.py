@@ -80,11 +80,25 @@ def add_ship(
 
     return current_ship
 
+
+def check_ship_form(cells: Collection[Map.MapCell]) -> bool:
+    prev_x = None
+    prev_y = None
+    for cell in cells:
+        coord_x, coord_y = cell.coordinates
+        if prev_x is not None and abs(prev_x - coord_x) > 1:
+            return False
+        if prev_y is not None and abs(prev_y - coord_y) > 1:
+            return False
+        prev_x = coord_x
+        prev_y = coord_y
+    return True
+
+
 if __name__ == '__main__':
     map = Map(size=10)
-    t = add_ship((map.fields[1][1], map.fields[1][2], map.fields[1][3]))
-    try:
-        t = add_ship((map.fields[1][3], map.fields[1][4], map.fields[1][5]))
-    except WrongShipPlacementException:
-        print('Ship is cannot be putted here.')
+    t = check_ship_form((map.fields[1][1], map.fields[1][2], map.fields[1][3]))
+    assert t is True
+    t = check_ship_form((map.fields[1][3], map.fields[1][4], map.fields[1][5]))
+    assert t is False
     print('t')
