@@ -1,7 +1,16 @@
 from typing import Any, Collection
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QLabel, QSlider, QPushButton, QWidget
+from PyQt5.QtCore import Qt, QRect
+from PyQt5.QtGui import QPixmap, QColor, QPainter
+
 
 
 class WrongShipPlacementException(Exception):
+    pass
+
+
+
+class WrongShipFormException(Exception):
     pass
 
 
@@ -9,10 +18,40 @@ class Ship:
     name: str
     position_cells: list['MapCell']
     around_cells: list['MapCell']
+    damaged_cells: list['MapCell']
+    destroyed: bool = False
 
+    def __init__(
+        self,
+        cells: Collection['Map.MapCell']
+    ):
+        self.position_cells = list(cells)
+        self.around_cells = []
+        self.damaged_cells = []
 
-class ShipAround:
-    pass
+        if not check_chain_cell(cells):
+            raise WrongShipFormException('Ship has wrong form.')
+
+        if not all(cell.entity is None for cell in cells):
+            raise WrongShipPlacementException('Ship is cannot be putted here.')
+
+        for cell in cells:
+            cell.entity = self
+        for cell in cells:
+            coord_x, coord_y = cell.coordinates
+            for map_x in range(
+                    max(coord_x - 1, 0),
+                    min(coord_x + 1, cell.parent_map.size) + 1
+            ):
+                for map_y in range(
+                        max(coord_y - 1, 0),
+                        min(coord_y + 1, cell.parent_map.size) + 1
+                ):
+                    current_cell = cell.parent_map.fields[map_x][map_y]
+                    if self not in current_cell.around_entities:
+                        current_cell.around_entities.append(self)
+                    if current_cell not in self.around_cells:
+                        self.around_cells.append(current_cell)
 
 
 class Map:
@@ -44,37 +83,7 @@ class Map:
 class Player:
     name: str
     map: Map
-
-
-def add_ship(
-    cells: Collection[Map.MapCell]
-) -> Ship:
-    current_ship = Ship()
-    current_ship.position_cells = cells
-    current_ship.around_cells = []
-
-    if not all(cell.entity is None for cell in cells):
-        raise WrongShipPlacementException('Ship is cannot be putted here.')
-
-    for cell in cells:
-        cell.entity = current_ship
-    for cell in cells:
-        coord_x, coord_y = cell.coordinates
-        for map_x in range(
-                max(coord_x-1, 0),
-                min(coord_x+1, cell.parent_map.size) + 1
-        ):
-            for map_y in range(
-                    max(coord_y-1, 0),
-                    min(coord_y+1, cell.parent_map.size) + 1
-            ):
-                current_cell = cell.parent_map.fields[map_x][map_y]
-                if current_ship not in current_cell.around_entities:
-                    current_cell.around_entities.append(current_ship)
-                if current_cell not in current_ship.around_cells:
-                    current_ship.around_cells.append(current_cell)
-
-    return current_ship
+    ships: list[Ship]
 
 
 def check_chain_cell(cells: Collection[Map.MapCell]) -> bool:
@@ -97,10 +106,4 @@ def check_chain_cell(cells: Collection[Map.MapCell]) -> bool:
 
 if __name__ == '__main__':
     map = Map(size=10)
-    t = add_ship((map.fields[1][1], map.fields[1][2], map.fields[1][3]))
-    t = add_ship((map.fields[3][1], map.fields[3][2], map.fields[3][5]))
-    try:
-        t = add_ship((map.fields[1][4], map.fields[1][5], map.fields[1][6]))
-    except WrongShipPlacementException:
-        print('Ship is cannot be putted here.')
-    print('t')
+

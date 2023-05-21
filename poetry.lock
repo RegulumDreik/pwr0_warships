@@ -153,34 +153,6 @@ python-versions = ">=3.6.8"
 diagrams = ["railroad-diagrams", "jinja2"]
 
 [[package]]
-name = "pyqt5"
-version = "5.15.9"
-description = "Python bindings for the Qt cross platform application toolkit"
-category = "main"
-optional = false
-python-versions = ">=3.7"
-
-[package.dependencies]
-PyQt5-Qt5 = ">=5.15.2"
-PyQt5-sip = ">=12.11,<13"
-
-[[package]]
-name = "pyqt5-qt5"
-version = "5.15.2"
-description = "The subset of a Qt installation needed by PyQt5."
-category = "main"
-optional = false
-python-versions = "*"
-
-[[package]]
-name = "pyqt5-sip"
-version = "12.12.1"
-description = "The sip module support for PyQt5"
-category = "main"
-optional = false
-python-versions = ">=3.7"
-
-[[package]]
 name = "pytest"
 version = "7.3.1"
 description = "pytest: simple powerful testing with Python"
@@ -254,7 +226,7 @@ python-versions = ">=3.7"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "3bb186e94d1c298ac1cf3fb9d92a041a89b8ce691e4d41c71169f55245b746b0"
+content-hash = "aa812c5f9a2234d199797bf444f00f16665bc64cd8197fffa9f01407cb764e06"
 
 [metadata.files]
 colorama = []
@@ -270,9 +242,6 @@ packaging = []
 pillow = []
 pluggy = []
 pyparsing = []
-pyqt5 = []
-pyqt5-qt5 = []
-pyqt5-sip = []
 pytest = []
 python-dateutil = []
 setuptools-scm = []
