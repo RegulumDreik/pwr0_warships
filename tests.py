@@ -1,5 +1,5 @@
-from main import Map, check_chain_cell
-
+from ship import check_chain_cell
+from map import Map
 
 
 def test_positive_1():
