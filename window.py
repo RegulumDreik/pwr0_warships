@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QGraphicsGri
     QPushButton, \
     QWidget, QGridLayout, QGraphicsView, QAction, QStatusBar, QMenuBar, QHBoxLayout, QGraphicsScene
 from PyQt5.QtCore import Qt, QRect, QCoreApplication, QMetaObject
-from PyQt5.QtGui import QPixmap, QColor, QPainter, QMouseEvent, QBrush
+from PyQt5.QtGui import QPixmap, QColor, QPainter, QMouseEvent, QBrush, QPen
 from PyQt5 import QtGui
 
 from map import Map
@@ -37,6 +37,23 @@ class WarshipsGraphicsView(QGraphicsView):
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
         pass
 
+class InstrumentedWidget(QWidget):
+
+    instrument_function: Optional[Callable]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.instrument_function = None
+
+    def mouseReleaseEvent(self, a0: QtGui.QMouseEvent) -> None:
+        if self.instrument_function is not None:
+            self.instrument_function()
+        else:
+            print(
+                'KUKU'
+            )
+
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow, field_size: int = 10):
@@ -45,7 +62,7 @@ class Ui_MainWindow(object):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
         MainWindow.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
-        self.centralwidget = QWidget(MainWindow)
+        self.centralwidget = InstrumentedWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.widget = QWidget(self.centralwidget)
         self.widget.setObjectName(u"widget")
@@ -87,12 +104,32 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout.addLayout(self.gridLayout_2)
 
+        self.horizontalLayoutWidget_2 = QWidget(self.centralwidget)
+        self.horizontalLayoutWidget_2.setObjectName(u"horizontalLayoutWidget_2")
+        self.horizontalLayoutWidget_2.setGeometry(QRect(20, 360, 750, 200))
+        self.graphics_scene_2 = QGraphicsScene(self.widget)
+        self.horizontalLayout_2 = QHBoxLayout(self.horizontalLayoutWidget_2)
+        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
+        self.graphicsView_2 = QGraphicsView(self.graphics_scene_2, self.horizontalLayoutWidget_2)
+        self.graphicsView_2.setObjectName(u"graphicsView_2")
+
+        self.horizontalLayout_2.addWidget(self.graphicsView_2)
+        self.graphics_scene_2.addRect(20,20,20,20, QPen(Qt.red), QBrush(Qt.gray))
+
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
 
         QMetaObject.connectSlotsByName(MainWindow)  # I dunno what it doing.
     # setupUi
+
+    def cleanField(self, target_field=None):
+        if target_field is None:
+            target_field = self.gridCells
+        for row in target_field:
+            for cell in row:
+                cell.setBackgroundBrush(QBrush(QColor(255, 255, 255)))
 
     def DrawWarshipsFields(self, current_player_map: Map, other_player_map: Map):
         for row in current_player_map.fields:
@@ -104,6 +141,9 @@ class Ui_MainWindow(object):
     def drawShips(self, ships: Collection[Ship], target_field=None):
         if target_field is None:
             target_field = self.gridCells
+        for row in target_field:
+            for cell in row:
+                cell.setBackgroundBrush(QBrush(QColor(167, 195, 217)))
         for ship in ships:
             for cell in ship.position_cells:
                 visual_object: WarshipsGraphicsView = target_field[cell.coordinates[0]][cell.coordinates[1]]
@@ -121,7 +161,7 @@ class Ui_MainWindow(object):
         for spy in intell:
             visual_object: WarshipsGraphicsView = target_field[spy.coordinates[0]][spy.coordinates[1]]
             if spy.entity is None:
-                visual_object.setBackgroundBrush(QBrush(QColor(3, 99, 173)))
+                visual_object.setBackgroundBrush(QBrush(QColor(167, 195, 217)))
                 continue
             if spy.entity.destroyed:
                 visual_object.setBackgroundBrush(QBrush(QColor(173, 37, 3)))

@@ -3,11 +3,14 @@ import sys
 import time
 from functools import partial
 
+from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QApplication, QMainWindow
 
 from map import Map
 from ship import Ship
 from window import Ui_MainWindow, WarshipsGraphicsView
+
+
 
 
 class Player:
@@ -16,6 +19,7 @@ class Player:
     ships: list[Ship]
     intell: list[Map.MapCell]
     field: list[list[WarshipsGraphicsView]]
+    unplaced_ships: dict[int, int]
 
     def __init__(
         self,
@@ -90,8 +94,51 @@ class Game:
             for cell in i:
                 cell.instrument_function = self.make_turn
 
+    def start_new_turn(self, *args, **kwargs):
+        for i in self.inactive_player.field:
+            for cell in i:
+                cell.instrument_function = self.make_turn
+        for i in self.active_player.field:
+            for cell in i:
+                cell.instrument_function = None
+        self.ui_window.drawShips(self.active_player.ships, self.active_player.field)
+        self.ui_window.drawIntell(self.active_player.intell, self.inactive_player.field)
+
+    def pause_game(self, *args, **kwargs):
+        for i in self.inactive_player.field:
+            for cell in i:
+                cell.instrument_function = self.start_new_turn
+        self.ui_window.cleanField(self.active_player.field)
+        self.ui_window.cleanField(self.inactive_player.field)
+        self.ui_window.centralwidget.instrument_function = self.start_new_turn
+        for i in self.active_player.field:
+            for cell in i:
+                cell.instrument_function = self.start_new_turn
+
     def make_turn(self, coordinates, parent, event, *args, **kwargs):
-        print(coordinates)
+        attacked_cell = self.inactive_player.map.fields[coordinates[0]][coordinates[1]]
+        self.active_player.intell.append(
+            attacked_cell,
+        )
+        if attacked_cell.entity is not None:
+            attacked_entity = attacked_cell.entity
+            if attacked_cell not in attacked_entity.damaged_cells:
+                attacked_entity.damaged_cells.append(attacked_cell)
+                print('damaged')
+            if len(attacked_entity.damaged_cells) == len(attacked_entity.position_cells):
+                attacked_entity.destroyed = True
+                self.active_player.intell.extend(attacked_entity.around_cells)
+                print('destroyed')
+
+        self.ui_window.drawIntell(self.active_player.intell, self.inactive_player.field)
+        for i in self.inactive_player.field:
+            for cell in i:
+                cell.instrument_function = self.pause_game
+        for i in self.inactive_player.field:
+            for cell in i:
+                cell.instrument_function = self.pause_game
+        self.ui_window.centralwidget.instrument_function = self.pause_game
+        self.active_player, self.inactive_player = self.inactive_player, self.active_player
 
 
 if __name__ == '__main__':
