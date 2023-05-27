@@ -3,7 +3,8 @@ from typing import Collection, Callable, Optional
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QGraphicsGridLayout, QLabel, QGraphicsItem, \
     QPushButton, \
-    QWidget, QGridLayout, QGraphicsView, QAction, QStatusBar, QMenuBar, QHBoxLayout, QGraphicsScene
+    QWidget, QGridLayout, QGraphicsView, QAction, QStatusBar, QMenuBar, QHBoxLayout, QGraphicsScene, \
+    QGraphicsLinearLayout, QBoxLayout
 from PyQt5.QtCore import Qt, QRect, QCoreApplication, QMetaObject
 from PyQt5.QtGui import QPixmap, QColor, QPainter, QMouseEvent, QBrush, QPen
 from PyQt5 import QtGui
@@ -19,23 +20,34 @@ class WarshipsGraphicsView(QGraphicsView):
 
     coordinates: tuple[int, int]
     instrument_function: Optional[Callable]
+    alternative_function: Optional[Callable]
+    function_on_hover: Optional[Callable]
 
     def __init__(self, coordinates, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.instrument_function = None
+        self.alternative_function = None
+        self.function_on_hover = None
         self.coordinates = coordinates
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
-        print('t')
-        t = self.backgroundBrush()
-        print(t.color().getRgb())
-        if self.instrument_function is None:
-            print('t1')
+        if event.button() == Qt.LeftButton:
+            print('lb')
+            if self.instrument_function is not None:
+                try:
+                    self.instrument_function(coordinates=self.coordinates, parent=self.parent(), event=event)
+                except Exception as exc:
+                    print('t')
+                    return
         else:
-            self.instrument_function(coordinates=self.coordinates, parent=self.parent(), event=event)
+            print('alt')
+            if self.alternative_function is not None:
+                self.alternative_function(coordinates=self.coordinates, parent=self.parent(), event=event)
+
 
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
-        pass
+        if self.function_on_hover is not None:
+            self.function_on_hover(self.coordinates, self.underMouse())
 
 class InstrumentedWidget(QWidget):
 
@@ -52,6 +64,48 @@ class InstrumentedWidget(QWidget):
             print(
                 'KUKU'
             )
+
+
+class IconWidget(InstrumentedWidget):
+    def __init__(self, ship_size: int, scene, parent=None, *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
+        self.ship_size = ship_size
+
+        layout = QHBoxLayout()
+        self.setLayout(layout)
+
+        icon_pixmap = self.generate_icon_pixmap(40, 100, QColor('gray'), ship_size, 20)
+
+        item = scene.addPixmap(icon_pixmap)
+        item.setFlag(item.ItemIsMovable)
+
+        label = QLabel()
+        label.setPixmap(icon_pixmap)
+        layout.addWidget(label)
+
+    def mouseReleaseEvent(self, a0: QtGui.QMouseEvent) -> None:
+        if self.instrument_function is not None:
+            self.instrument_function(self.ship_size, self)
+        else:
+            print(
+                'TOTO'
+            )
+
+    @staticmethod
+    def generate_icon_pixmap(width, height, color, ship_size, max_width):
+        pixmap = QPixmap(width, height)
+        pixmap.fill(Qt.transparent)
+
+        painter = QPainter(pixmap)
+        painter.setBrush(color)
+        block_height = min((height // ship_size), max_width)
+        position = ((width - block_height) // 2)
+        for i in range(ship_size):
+            painter.drawRect(position, i*block_height, block_height, block_height)
+        painter.end()
+
+        return pixmap
+
 
 
 
@@ -109,14 +163,9 @@ class Ui_MainWindow(object):
         self.horizontalLayoutWidget_2.setGeometry(QRect(20, 360, 750, 200))
         self.graphics_scene_2 = QGraphicsScene(self.widget)
         self.horizontalLayout_2 = QHBoxLayout(self.horizontalLayoutWidget_2)
+        self.horizontalLayout_2.setDirection(QBoxLayout.Direction.LeftToRight)
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
         self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
-        self.graphicsView_2 = QGraphicsView(self.graphics_scene_2, self.horizontalLayoutWidget_2)
-        self.graphicsView_2.setObjectName(u"graphicsView_2")
-
-        self.horizontalLayout_2.addWidget(self.graphicsView_2)
-        self.graphics_scene_2.addRect(20,20,20,20, QPen(Qt.red), QBrush(Qt.gray))
-
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
@@ -169,6 +218,13 @@ class Ui_MainWindow(object):
             if spy in spy.entity.damaged_cells:
                 visual_object.setBackgroundBrush(QBrush(QColor(255, 174, 66)))
                 continue
+
+    def drawShipsInventory(self, ship_inventory: dict[int, int], instument_function = None):
+        for key, value in ship_inventory.items():
+            for _ in range(value):
+                icon = IconWidget(key, self.graphics_scene_2, self.widget)
+                icon.instrument_function = instument_function
+                self.horizontalLayout_2.addWidget(icon, alignment=Qt.AlignCenter)
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))

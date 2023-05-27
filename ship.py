@@ -27,7 +27,7 @@ class Ship:
         if not check_chain_cell(cells):
             raise WrongShipFormException('Ship has wrong form.')
 
-        if not all(cell.entity is None for cell in cells):
+        if not all(len(cell.around_entities) == 0 for cell in cells):
             raise WrongShipPlacementException('Ship is cannot be putted here.')
 
         for cell in cells:
@@ -36,11 +36,11 @@ class Ship:
             coord_x, coord_y = cell.coordinates
             for map_x in range(
                     max(coord_x - 1, 0),
-                    min(coord_x + 1, cell.parent_map.size) + 1
+                    min(coord_x + 1, cell.parent_map.size - 1) + 1
             ):
                 for map_y in range(
                         max(coord_y - 1, 0),
-                        min(coord_y + 1, cell.parent_map.size) + 1
+                        min(coord_y + 1, cell.parent_map.size - 1) + 1
                 ):
                     current_cell = cell.parent_map.fields[map_x][map_y]
                     if self not in current_cell.around_entities:
