@@ -1,12 +1,10 @@
 import sys
 from typing import Collection, Callable, Optional
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QGraphicsGridLayout, QLabel, QGraphicsItem, \
-    QPushButton, \
-    QWidget, QGridLayout, QGraphicsView, QAction, QStatusBar, QMenuBar, QHBoxLayout, QGraphicsScene, \
-    QGraphicsLinearLayout, QBoxLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow,  QLabel, \
+    QWidget, QGridLayout, QGraphicsView, QHBoxLayout, QGraphicsScene, QBoxLayout
 from PyQt5.QtCore import Qt, QRect, QCoreApplication, QMetaObject
-from PyQt5.QtGui import QPixmap, QColor, QPainter, QMouseEvent, QBrush, QPen
+from PyQt5.QtGui import QPixmap, QColor, QPainter, QMouseEvent, QBrush, QPen, QFont
 from PyQt5 import QtGui
 
 from map import Map
@@ -19,8 +17,8 @@ ROWS, COLS = int(WINDOW_HEIGHT/SQUARE_SIDE), int(WINDOW_WIDTH/2*SQUARE_SIDE)
 class WarshipsGraphicsView(QGraphicsView):
 
     coordinates: tuple[int, int]
-    instrument_function: Optional[Callable]
-    alternative_function: Optional[Callable]
+    instrument_function: Optional[Callable]  # LMB
+    alternative_function: Optional[Callable]  # RMB
     function_on_hover: Optional[Callable]
 
     def __init__(self, coordinates, *args, **kwargs):
@@ -32,15 +30,9 @@ class WarshipsGraphicsView(QGraphicsView):
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.LeftButton:
-            print('lb')
             if self.instrument_function is not None:
-                try:
-                    self.instrument_function(coordinates=self.coordinates, parent=self.parent(), event=event)
-                except Exception as exc:
-                    print('t')
-                    return
+                self.instrument_function(coordinates=self.coordinates, parent=self.parent(), event=event)
         else:
-            print('alt')
             if self.alternative_function is not None:
                 self.alternative_function(coordinates=self.coordinates, parent=self.parent(), event=event)
 
@@ -48,6 +40,7 @@ class WarshipsGraphicsView(QGraphicsView):
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
         if self.function_on_hover is not None:
             self.function_on_hover(self.coordinates, self.underMouse())
+
 
 class InstrumentedWidget(QWidget):
 
@@ -60,10 +53,6 @@ class InstrumentedWidget(QWidget):
     def mouseReleaseEvent(self, a0: QtGui.QMouseEvent) -> None:
         if self.instrument_function is not None:
             self.instrument_function()
-        else:
-            print(
-                'KUKU'
-            )
 
 
 class IconWidget(InstrumentedWidget):
@@ -86,10 +75,6 @@ class IconWidget(InstrumentedWidget):
     def mouseReleaseEvent(self, a0: QtGui.QMouseEvent) -> None:
         if self.instrument_function is not None:
             self.instrument_function(self.ship_size, self)
-        else:
-            print(
-                'TOTO'
-            )
 
     @staticmethod
     def generate_icon_pixmap(width, height, color, ship_size, max_width):
@@ -105,8 +90,6 @@ class IconWidget(InstrumentedWidget):
         painter.end()
 
         return pixmap
-
-
 
 
 class Ui_MainWindow(object):
@@ -180,13 +163,6 @@ class Ui_MainWindow(object):
             for cell in row:
                 cell.setBackgroundBrush(QBrush(QColor(255, 255, 255)))
 
-    def DrawWarshipsFields(self, current_player_map: Map, other_player_map: Map):
-        for row in current_player_map.fields:
-            for cell in row:
-                visual_object: WarshipsGraphicsView = self.gridCells[cell.coordinates[0]][cell.coordinates[1]]
-                if cell.entity is not None:
-                    visual_object.setBackgroundBrush(QBrush(QColor(100, 100, 100)))
-
     def drawShips(self, ships: Collection[Ship], target_field=None):
         if target_field is None:
             target_field = self.gridCells
@@ -226,16 +202,17 @@ class Ui_MainWindow(object):
                 icon.instrument_function = instument_function
                 self.horizontalLayout_2.addWidget(icon, alignment=Qt.AlignCenter)
 
+    def finish(self, player, next_game_function = None):
+        finish_widget = InstrumentedWidget(self.main_window)
+        layout = QHBoxLayout(finish_widget)
+        win_label = QLabel(f'{player.name} WINNER', finish_widget)
+        win_label.setFont(QFont("Arial", 40, QFont.Bold))
+        layout.addWidget(win_label, alignment=Qt.AlignCenter)
+        finish_widget.setLayout(layout)
+        finish_widget.instrument_function = next_game_function
+        self.main_window.setCentralWidget(finish_widget)
+
+
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
     # retranslateUi
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = QMainWindow()
-    ui_windoes = Ui_MainWindow()
-    ui_windoes.setupUi(window)
-    window.setFixedSize(WINDOW_WIDTH, WINDOW_HEIGHT)
-    window.setWindowTitle("Warships")
-    window.show()
-    app.exec_()
