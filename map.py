@@ -5,7 +5,7 @@ class Map:
     fields: list[list['Map.MapCell']]
     size: int
 
-    class MapCell:
+    class MapCell:  # класс, хронящий данные о карте
         entity: Ship
         around_entities: list[Ship]
         parent_map: 'Map'

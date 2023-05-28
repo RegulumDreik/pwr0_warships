@@ -27,7 +27,7 @@ class Ship:
         if not check_chain_cell(cells):
             raise WrongShipFormException('Ship has wrong form.')
 
-        if not all(len(cell.around_entities) == 0 for cell in cells):
+        if not all(len(cell.around_entities) == 0 for cell in cells):  # ошибка, при попытке поставить корабли рядом друг с другом
             raise WrongShipPlacementException('Ship is cannot be putted here.')
 
         for cell in cells:
@@ -43,13 +43,13 @@ class Ship:
                         min(coord_y + 1, cell.parent_map.size - 1) + 1
                 ):
                     current_cell = cell.parent_map.fields[map_x][map_y]
-                    if self not in current_cell.around_entities:
+                    if self not in current_cell.around_entities:  # добавление информации об окружающих корабль клетках
                         current_cell.around_entities.append(self)
                     if current_cell not in self.around_cells:
                         self.around_cells.append(current_cell)
 
 
-def check_chain_cell(cells: Collection['Map.MapCell']) -> bool:
+def check_chain_cell(cells: Collection['Map.MapCell']) -> bool:  # проверка на целостность корабля - что он прямой и последовательный
     prev_x = None
     prev_y = None
     for cell in cells:
